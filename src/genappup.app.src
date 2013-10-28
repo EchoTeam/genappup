@@ -1,0 +1,13 @@
+{application, genappup,
+ [
+  {description, "Create appup file for certain app, based on git information"},
+  {vsn, "1"},
+  {registered, []},
+  {applications, [
+                  kernel,
+                  stdlib
+                 ]},
+  {mod, { genappup, []}},
+  {env, []}
+ ]}.
+
