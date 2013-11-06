@@ -23,6 +23,8 @@ Common workflow for developers is:
 
 - run genappup. It checks which .erl  files was changed, generates appup term and store it into src/myfeature.appup.src . If appup file already exists,
   genappup runs merge application ( vimdiff by default, but can be specified by environment variable MERGETOOL)
+  
+  genappup master
 
 
 How to build genappup
