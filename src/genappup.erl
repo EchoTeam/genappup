@@ -5,6 +5,7 @@
 -define(DBG(X), io:format("DBG:  ~p:~p := ~p~n",[?MODULE,?LINE, X]) ).
 
 main([BranchName]) ->
+    check_if_dirty(),
     ChangedFiles = os:cmd("git diff-index --name-status "++BranchName++" src/"),
     Lines = [parse_line(X) || X <-   string:tokens(ChangedFiles,[10,13])],
     ErlFiles = lists:filter(fun({_Action,Path}) -> lists:suffix(".erl",Path)  end,Lines),
@@ -184,4 +185,12 @@ get_mergetool(false) -> "vimdiff";
 get_mergetool(X) -> X.
 
 
+check_if_dirty() ->
+    ChangedFiles = os:cmd("git diff --name-status HEAD --"),
+    Lines = [parse_line(X) || X <-   string:tokens(ChangedFiles,[10,13])],
+    case Lines of 
+        [] -> ok;  %% no uncommited changes
+        _ -> io:format("there are some uncommited changes: ~n~p~nPlease commit first",[Lines]),
+            halt(2)
+    end.
 
