@@ -25,7 +25,7 @@ Common workflow for developers is:
 
 ## How to build genappup
 
-- clone genappup sources from github 
-- goto root dir
-- make
+    git clone git@github.com:EchoTeam/genappup.git
+    cd genappup
+    make
 
