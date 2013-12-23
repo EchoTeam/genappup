@@ -178,7 +178,10 @@ save_new_appup(App,AppUpStr) ->
 
 -spec ask_decision() -> cancel|overwrite|merge.
 ask_decision() ->
-    parse_decision(io:get_chars("C) cancel M) merge O) overwrite >",1)).
+   Answer =  io:get_line("C) cancel M) merge O) overwrite >"),
+   CleanAnswer = re:replace(Answer, "(^\\s+)|(\\s+$)", "", [global,{return,list}]),
+   parse_decision(CleanAnswer).
+
 
 parse_decision("O")  -> overwrite;
 parse_decision("o")  -> overwrite;
