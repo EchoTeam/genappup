@@ -153,31 +153,43 @@ save_new_appup(App,AppUpStr) ->
     case filelib:is_file(FileName) of
         false -> file:write_file(FileName, AppUpStr);
         true -> 
-            io:fwrite("File ~p already exists.~n M) merge~n O) overwrite~n C) cancel~n",[FileName]),
-            case io:get_chars("[M/O/C]>",1) of
-                eof -> io:format("~nCanceled~n");
-                Answer -> case string:to_upper(Answer) of
-                        "C" -> io:format("~nCanceled~n");
-                        "O" -> file:write_file(FileName,AppUpStr), io:format("Overwritten~n");
-                        "M" -> 
-                            % write to temp file
-                            TempFileName = lists:concat(["/tmp/genappup.",erlang:phash2(make_ref())]),
-                            ?DBG(TempFileName),
-                            file:write_file(TempFileName,AppUpStr),
-                            % merging
-                            MergeTool = get_mergetool(),
-                            MergeCmd = MergeTool++" "++TempFileName++" "++ FileName,
-                            ?DBG(MergeCmd),
-                            Port = open_port({spawn, MergeCmd}, [exit_status, nouse_stdio,  binary]),
-                            receive
-                                {Port, {exit_status, _}}->
-                                    os:cmd("rm "++TempFileName);
-                                _X -> io:format("Got ~p??~n",[_X])
-                            end %% receive
-                    end   %% upper answer
-            end %%  eof or answer
+            io:fwrite("File ~s already exists.~n",[FileName]),
+            case ask_decision()  of
+                cancel    -> io:format("~nCanceled~n");
+                overwrite -> file:write_file(FileName,AppUpStr), io:format("Overwritten~n");
+                merge     ->                      
+                    % write to temp file
+                    TempFileName = lists:concat(["/tmp/genappup.",erlang:phash2(make_ref())]),
+                    ?DBG(TempFileName),
+                    file:write_file(TempFileName,AppUpStr),
+                    % merging
+                    MergeTool = get_mergetool(),
+                    MergeCmd = MergeTool++" "++TempFileName++" "++ FileName,
+                    ?DBG(MergeCmd),
+                    Port = open_port({spawn, MergeCmd}, [exit_status, nouse_stdio,  binary]),
+                    receive
+                        {Port, {exit_status, _}}->
+                            os:cmd("rm "++TempFileName);
+                        _X -> io:format("Got ~p??~n",[_X])
+                    end %% receive
+            end %%  decision cancel/merge/overwrite
     end. %% file already exists
 
+
+-spec ask_decision() -> cancel|overwrite|merge.
+ask_decision() ->
+    parse_decision(io:get_chars("C) cancel M) merge O) overwrite >",1)).
+
+parse_decision("O")  -> overwrite;
+parse_decision("o")  -> overwrite;
+parse_decision("M")  -> merge;
+parse_decision("m")  -> merge;
+parse_decision("C")  -> cancel;
+parse_decision("c")  -> cancel;
+parse_decision(eof)  -> cancel;
+parse_decision(NotExpected) -> 
+    io:fwrite("Do not understand ~s~n",[NotExpected]), 
+    ask_decision().
 
 
 get_mergetool() -> get_mergetool(os:getenv("MERGETOOL")).
