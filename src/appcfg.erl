@@ -55,8 +55,14 @@ check(_,X) -> X.
 
 yesno(Msg) ->
     io:format(lists:concat(Msg)),
-    case io:get_chars("YN>",1) of
+    Answer = io:get_line("YN>"),
+    ClearAnswer = re:replace(Answer, "(^\\s+)|(\\s+$)", "", [global,{return,list}]),
+    case ClearAnswer of
         "Y" -> yes;
         "y" -> yes;
-        _ -> no
+        "n" -> no;
+        "N" -> no;
+        _ -> 
+            io:format("What? pls answer Y or N~n"), yesno(Msg)
     end. 
+
