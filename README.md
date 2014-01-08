@@ -1,8 +1,8 @@
 # genappup
 
-A tool to generate Erlang appup files, based on git information.
+A tool to generate Erlang .appup files, based on git meta information.
 
-It analyzes diff between current HEAD and specified branch/revision, generates appup file and store it into src/{appname}.appup.src
+It analyzes diff between current HEAD and specified branch/revision, generates .appup file and store it into src/{appname}.appup.src
 
 
 ## Basic workflow
@@ -13,13 +13,13 @@ Common workflow for developers is:
 
   `git checkout -b myfeature`
 
-- some code developing, fixing, etc
+- some code developing, fixing, etc.
 
 - `git commit`
 
-- go to application root dir
+- go to the application root dir
 
-- run `genappup master`. It analyzes which .erl files were changed, generates appup term and store it into src/{appname}.appup.src. If appup file already exists,
+- run `genappup master`. It analyzes which .erl files were changed, generates appup term and save it into src/{appname}.appup.src. If .appup file already exists,
   genappup runs merge application (vimdiff by default, but can be specified by environment variable MERGETOOL)
 
 
@@ -29,6 +29,6 @@ Common workflow for developers is:
     cd genappup
     make
     
-Make genappup available through your PATH variable, for example, by this:
+Make genappup available through your PATH variable, for example, with this:
 
     sudo cp genappup /usr/local/bin/
