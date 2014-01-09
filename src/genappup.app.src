@@ -1,6 +1,6 @@
 {application, genappup,
  [
-  {description, "Create appup file for certain app, based on git information"},
+  {description, "An .appup file generation tool"},
   {vsn, "1"},
   {registered, []},
   {applications, [

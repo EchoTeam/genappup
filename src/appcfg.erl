@@ -34,13 +34,13 @@ get_name({application,Name,_}) -> Name.
 
 check(undefined,_) -> err("app vsn in the branch is undefined. Cannot continue~n");
 check(_,undefined) -> err("app vsn in the HEAD is undefined. Cannot continue~n");
-check(git,_) -> err("Sorry,cannot handle git as application version~n");
-check(_,git) -> err("Sorry,cannot handle git as application version~n");
+check(git,_) -> err("Sorry, cannot handle git as application version~n");
+check(_,git) -> err("Sorry, cannot handle git as application version~n");
 
 check(X,X) ->
-    case yesno(["Despite the fact some erlang files are changed,~n",
-		"current and old App version are the same (",X,
-		"). Should I bump current app version?~n"]) of
+    case yesno(["Despite of the fact some erlang files are changed,~n",
+		"current and old app versions are the same (",X,
+		"). Should I bump up current app version?~n"]) of
         yes  -> 
             Vsn =  bump:version(X),
             io:format("New app vsn = ~p~n",[Vsn]),
@@ -63,6 +63,6 @@ yesno(Msg) ->
         "n" -> no;
         "N" -> no;
         _ -> 
-            io:format("What? pls answer Y or N~n"), yesno(Msg)
+            io:format("Please answer Y or N~n"), yesno(Msg)
     end. 
 

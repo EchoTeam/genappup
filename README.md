@@ -2,14 +2,14 @@
 
 A tool to generate Erlang .appup files, based on git meta information.
 
-It analyzes diff between current HEAD and specified branch/revision, generates .appup file and store it into src/{appname}.appup.src
+It analyzes diff between current HEAD and a specified branch/revision, generates .appup file and store it as src/{appname}.appup.src
 
 
 ## Basic workflow
 
-Common workflow for developers is:
+Common workflow may look like this:
 
-- make branch from master, for instance myfeature
+- make branch from master, for instance, myfeature
 
   `git checkout -b myfeature`
 
