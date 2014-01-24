@@ -5,21 +5,32 @@
 -define(DBG(X), io:format("DBG:  ~p:~p := ~p~n",[?MODULE,?LINE, X]) ).
 
 main([BranchName]) ->
+    main(BranchName, []);
+main(["-c", BranchName]) ->
+    main(BranchName, [{check, true}]);
+main(_) ->
+    io:format("usage:~n     ./genappup [options] BranchName~n"
+              "               where options are:~n"
+              "                 -c -- Check if app version changed~n").
+
+main(BranchName, Opts) ->
     check_if_dirty(),
     ChangedFiles = os:cmd("git diff-index --name-status "++BranchName++" src/"),
     Lines = [parse_line(X) || X <-   string:tokens(ChangedFiles,[10,13])],
     ErlFiles = lists:filter(fun({_Action,Path}) -> lists:suffix(".erl",Path)  end,Lines),
-    prepare_appup(ErlFiles,BranchName);
+    prepare_appup(ErlFiles, BranchName, Opts).
 
-main([]) ->
-    io:format("usage:~n     ./genappup BranchName~n").
 
-prepare_appup([],BranchName) ->
-    io:format("HEAD and ~p does not have any differencies. Stop.~n",[BranchName]), halt(0);
 
-prepare_appup(ErlFiles,BranchName) ->
-    
-    ApplicationFile = appcfg:find(),
+prepare_appup([], BranchName, _Opts) ->
+    bye("HEAD and ~p does not have any differencies. Stop.~n", [BranchName]);
+
+prepare_appup(ErlFiles, BranchName, Opts) -> 
+    ApplicationFile = case appcfg:find() of
+        {error, Reason} ->
+            bye(reason_desc(Reason));
+        {ok, X} -> X
+    end,
     
     OldApp = appcfg:read(ApplicationFile,BranchName),
     CurrentApp = appcfg:read(ApplicationFile,"HEAD"),
@@ -27,7 +38,15 @@ prepare_appup(ErlFiles,BranchName) ->
     OldVSN = appcfg:get_version(OldApp),
     CurrentVSN = appcfg:get_version(CurrentApp),
     
-    Vsn =  appcfg:check(OldVSN,CurrentVSN),
+    CheckResult = appcfg:check(OldVSN, CurrentVSN),
+
+    Vsn = case proplists:get_value(check, Opts, false) of
+        true ->
+            return_check_result(CheckResult);
+        false ->
+            version_by_check_result(CheckResult)
+    end,
+    
     case Vsn of
         CurrentVSN -> ok;
         _ -> appcfg:put_version(ApplicationFile,CurrentApp,Vsn)
@@ -205,7 +224,57 @@ check_if_dirty() ->
     Lines = [parse_line(X) || X <-   string:tokens(ChangedFiles,[10,13])],
     case Lines of 
         [] -> ok;  %% no uncommited changes
-        _ -> io:format("there are some uncommited changes: ~n~p~nPlease commit first",[Lines]),
-            halt(2)
+        _ -> bye("there are some uncommited changes: ~n~p~nPlease commit first", [Lines], 2)
     end.
 
+version_by_check_result({error, {bump_version, Vsn0}}) ->
+    case yesno([reason_desc({bump_version, Vsn0}),
+                " (", Vsn0 ,"). Should I bump up current app version?"]) of
+        yes  -> 
+            Vsn =  bump:version(Vsn0),
+            io:format("New app vsn = ~p~n",[Vsn]),
+            Vsn;
+        _ -> 
+            bye("Ok, stop.")
+    end;
+version_by_check_result({error, Reason}) ->
+    bye(reason_desc(Reason));
+version_by_check_result({ok, X}) -> X.
+
+return_check_result({ok, _Vsn}) ->
+    bye("OK");
+return_check_result({error, Reason}) ->
+    bye("~s~n", [reason_desc(Reason)], 1).
+
+yesno(Msg) ->
+    io:format("~s~n", lists:concat(Msg)),
+    Answer = io:get_line("YN>"),
+    ClearAnswer = re:replace(Answer, "(^\\s+)|(\\s+$)", "", [global,{return,list}]),
+    case ClearAnswer of
+        "Y" -> yes;
+        "y" -> yes;
+        "n" -> no;
+        "N" -> no;
+        _ -> 
+            io:format("Please answer Y or N~n"), yesno(Msg)
+    end. 
+
+reason_desc(no_old_vsn) -> "app vsn in the branch is undefined. Cannot continue";
+reason_desc(no_new_vsn) -> "app vsn in the HEAD is undefined. Cannot continue";
+reason_desc(git_as_old_vsn) -> "Sorry, cannot handle git as old application version";
+reason_desc(git_as_new_vsn) -> "Sorry, cannot handle git as new application version";
+reason_desc({bump_version, _OldVsn}) ->
+    "Despite of the fact some erlang files are changed, current and old versions are the same";
+reason_desc(no_app_file) -> "No src/...app.src file. Cannot read application version";
+reason_desc(multiple_app_files) -> "src/...app.src files more than one. Cannot read application version";
+reason_desc(_) -> "Error of unknown reason".
+
+bye(Msg) ->
+    bye("~s~n", [Msg]).
+
+bye(Fmt, Args) ->
+    bye(Fmt, Args, 0).
+
+bye(Fmt, Args, ExitCode) ->
+    io:format(Fmt, Args),
+    halt(ExitCode).
