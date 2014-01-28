@@ -23,6 +23,12 @@ Common workflow may look like this:
   genappup runs merge application (vimdiff by default, but can be specified by environment variable MERGETOOL)
 
 
+You can also run genappup in 'check' mode using '-c' option
+   
+   `genappup -c master`
+
+In this mode genappup will check that app version is incremented when at least one of .erl files is updated compared to the specified branch.
+
 ## How to build and install genappup
 
     git clone git@github.com:EchoTeam/genappup.git
