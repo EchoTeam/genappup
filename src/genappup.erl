@@ -176,48 +176,40 @@ save_new_appup(App,AppUpStr) ->
             case ask_decision()  of
                 cancel    -> io:format("~nCanceled~n");
                 overwrite -> file:write_file(FileName,AppUpStr), io:format("Overwritten~n");
-                merge     ->                      
-                    % write to temp file
-                    TempFileName = lists:concat(["/tmp/genappup.",erlang:phash2(make_ref())]),
-                    ?DBG(TempFileName),
-                    file:write_file(TempFileName,AppUpStr),
-                    % merging
-                    MergeTool = get_mergetool(),
-                    MergeCmd = MergeTool++" "++TempFileName++" "++ FileName,
-                    ?DBG(MergeCmd),
-                    Port = open_port({spawn, MergeCmd}, [exit_status, nouse_stdio,  binary]),
-                    receive
-                        {Port, {exit_status, _}}->
-                            os:cmd("rm "++TempFileName);
-                        _X -> io:format("Got ~p??~n",[_X])
-                    end %% receive
+                save      ->
+                    SaveFileName = save_filename(FileName),
+                    file:write_file(SaveFileName, AppUpStr),
+                    io:format("Generated appup is saved to ~s. Use your favorite merge tool.", [SaveFileName])
             end %%  decision cancel/merge/overwrite
     end. %% file already exists
 
+save_filename(FileName) ->
+    save_filename(FileName, 1).
 
--spec ask_decision() -> cancel|overwrite|merge.
+save_filename(FileName, N) ->
+    NewFileName = FileName ++ "." ++ integer_to_list(N),
+    case filelib:is_file(NewFileName) of
+        false -> NewFileName;
+        true -> save_filename(FileName, N + 1)
+    end.
+
+-spec ask_decision() -> cancel|overwrite|save.
 ask_decision() ->
-   Answer =  io:get_line("C) cancel M) merge O) overwrite >"),
+   Answer =  io:get_line("C) cancel S) save alongside O) overwrite >"),
    CleanAnswer = re:replace(Answer, "(^\\s+)|(\\s+$)", "", [global,{return,list}]),
    parse_decision(CleanAnswer).
 
 
 parse_decision("O")  -> overwrite;
 parse_decision("o")  -> overwrite;
-parse_decision("M")  -> merge;
-parse_decision("m")  -> merge;
+parse_decision("S")  -> save;
+parse_decision("s")  -> save;
 parse_decision("C")  -> cancel;
 parse_decision("c")  -> cancel;
 parse_decision(eof)  -> cancel;
 parse_decision(NotExpected) -> 
     io:fwrite("Do not understand ~s~n",[NotExpected]), 
     ask_decision().
-
-
-get_mergetool() -> get_mergetool(os:getenv("MERGETOOL")).
-get_mergetool(false) -> "vimdiff";
-get_mergetool(X) -> X.
-
 
 check_if_dirty() ->
     ChangedFiles = os:cmd("git diff --name-status HEAD --"),
