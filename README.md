@@ -20,7 +20,10 @@ Common workflow may look like this:
 - go to the application root dir
 
 - run `genappup master`. It analyzes which .erl files were changed, generates appup term and save it into src/{appname}.appup.src. If .appup file already exists,
-  genappup runs merge application (vimdiff by default, but can be specified by environment variable MERGETOOL)
+  genappup can either:
+    - leave it as is
+    - overwrite
+    - save the new file alongside
 
 
 You can also run genappup in 'check' mode using '-c' option
