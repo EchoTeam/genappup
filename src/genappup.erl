@@ -239,7 +239,7 @@ return_check_result({error, Reason}) ->
     bye("~s~n", [reason_desc(Reason)], 1).
 
 yesno(Msg) ->
-    io:format("~s~n", lists:concat(Msg)),
+    io:format("~s~n", [lists:concat(Msg)]),
     Answer = io:get_line("YN>"),
     ClearAnswer = re:replace(Answer, "(^\\s+)|(\\s+$)", "", [global,{return,list}]),
     case ClearAnswer of
